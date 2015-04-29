@@ -1,56 +1,59 @@
 #!/bin/bash
 
 function create_ca() {
-  CN=$1
+  CA=$1
   BITS=$2
   DAYS=$3
 
-  mkdir -p ca && cd ca
+  mkdir -p $CA/ca && cd $CA/ca
   echo 01 > ca.srl
   echo > passphrase.txt
   openssl genrsa -passout file:passphrase.txt -out ca.key $BITS
-  openssl req -subj "/C=/ST=/L=/O=/OU=/CN=$CN" -new -x509 -days $DAYS -key ca.key -out ca.crt
-  cd ..
+  openssl req -subj "/C=/ST=/L=/O=/OU=/CN=$CA" -new -x509 -days $DAYS -key ca.key -out ca.crt
 }
 
 function create_server() {
-  CN=$1
-  BITS=$2
-  DAYS=$3
+  CA=$1
+  SERVER=$2
+  BITS=$3
+  DAYS=$4
 
-  mkdir -p server && cd server
+  CAP=`pwd`/$CA/ca
+
+  mkdir -p $CA/servers/$SERVER && cd $CA/servers/$SERVER
   echo 'subjectAltName = IP:127.0.0.1' > extfile.cnf
   echo > passphrase.txt
   openssl genrsa -passout file:passphrase.txt -out server.key $BITS
-  openssl req -subj "/CN=$CN" -new -key server.key -out server.csr
+  openssl req -subj "/CN=$SERVER" -new -key server.key -out server.csr
   openssl x509 -req -days $DAYS \
     -in server.csr \
-    -CA ../ca/ca.crt -CAkey ../ca/ca.key -CAserial ../ca/ca.srl \
+    -CA $CAP/ca.crt -CAkey $CAP/ca.key -CAserial $CAP/ca.srl \
     -extfile extfile.cnf \
     -out server.crt
-  cd ..
 }
 
 function create_client() {
-  CLIENT=$1
-  BITS=$2
-  DAYS=$3
+  CA=$1
+  CLIENT=$2
+  BITS=$3
+  DAYS=$4
 
-  mkdir -p clients/$CLIENT && cd clients/$CLIENT
+  CAP=`pwd`/$CA/ca
+
+  mkdir -p $CA/clients/$CLIENT && cd $CA/clients/$CLIENT
   echo 'extendedKeyUsage = clientAuth' > extfile.cnf
   echo > passphrase.txt
   openssl genrsa -passout file:passphrase.txt -out client.key $BITS
-  openssl req -subj "/CN=$CN - $CLIENT" -new -key client.key -out client.csr
+  openssl req -subj "/CN=$CA - $CLIENT" -new -key client.key -out client.csr
   openssl x509 -req -days $DAYS \
     -in client.csr \
-    -CA ../../ca/ca.crt -CAkey ../../ca/ca.key -CAserial ../../ca/ca.srl \
+    -CA $CAP/ca.crt -CAkey $CAP/ca.key -CAserial $CAP/ca.srl \
     -extfile extfile.cnf \
     -out client.crt
+
   openssl pkcs12 -export \
     -in client.crt -inkey client.key \
     -out client.p12 -password pass:$CLIENT
-
-  cd ../..
 }
 
 function osx_trust_ca() {
@@ -66,6 +69,6 @@ function osx_use_client() {
   echo "security set-identity-preference -Z $HASH -s https://$CN"
 }
 
-create_ca "vafer.org" 4096 365
-create_server "vafer.org" 4096 365
-create_client "torsten" 4096 365
+# create_ca "vafer.org" 4096 365
+# create_server "vafer.org" "vafer.org" 4096 365
+create_client "vafer.org" "torsten" 4096 365
