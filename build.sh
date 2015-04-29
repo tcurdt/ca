@@ -57,16 +57,19 @@ function create_client() {
 }
 
 function osx_trust_ca() {
-  security add-trusted-cert -r trustRoot -k "$HOME/Library/Keychains/login.keychain" ca/ca.crt
+  CA=$1
+  security add-trusted-cert -r trustRoot -k "$HOME/Library/Keychains/login.keychain" $CA/ca/ca.crt
 }
 
-function osx_use_client() {
-  CLIENT=$1
+function osx_install_client_for_server() {
+  CA=$1
+  SERVER=$2
+  CLIENT=$3
 
-  cd clients/$CLIENT
+  cd $CA/clients/$CLIENT
   security import client.p12 -k "$HOME/Library/Keychains/login.keychain"
   HASH=`openssl x509 -in client.crt -sha1 -noout -fingerprint | cut -d'=' -f2 | sed s/://g`
-  echo "security set-identity-preference -Z $HASH -s https://$CN"
+  echo "security set-identity-preference -Z $HASH -s https://$SERVER"
 }
 
 CA="vafer.org"
