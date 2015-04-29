@@ -69,6 +69,7 @@ function osx_use_client() {
   echo "security set-identity-preference -Z $HASH -s https://$CN"
 }
 
-# create_ca "vafer.org" 4096 365
-# create_server "vafer.org" "vafer.org" 4096 365
-create_client "vafer.org" "torsten" 4096 365
+CA="vafer.org"
+create_ca $CA 4096 365
+create_server $CA "vafer.org" 4096 365
+create_client $CA "torsten" 4096 365
