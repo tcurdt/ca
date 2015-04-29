@@ -1,0 +1,7 @@
+extfile.cnf
+passphrase.txt
+*.crt
+*.key
+*.csr
+*.p12
+*.srl
