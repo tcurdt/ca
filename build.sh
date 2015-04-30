@@ -10,6 +10,7 @@ function create_ca() {
   echo > passphrase.txt
   openssl genrsa -passout file:passphrase.txt -out ca.key $BITS
   openssl req -subj "/C=/ST=/L=/O=/OU=/CN=$CA" -new -x509 -days $DAYS -key ca.key -out ca.crt
+  cd -
 }
 
 function create_server() {
@@ -30,6 +31,7 @@ function create_server() {
     -CA $CAP/ca.crt -CAkey $CAP/ca.key -CAserial $CAP/ca.srl \
     -extfile extfile.cnf \
     -out server.crt
+  cd -
 }
 
 function create_client() {
@@ -54,6 +56,8 @@ function create_client() {
   openssl pkcs12 -export \
     -in client.crt -inkey client.key \
     -out client.p12 -password pass:$CLIENT
+
+  cd -
 }
 
 function osx_trust_ca() {
@@ -70,9 +74,16 @@ function osx_install_client_for_server() {
   security import client.p12 -k "$HOME/Library/Keychains/login.keychain"
   HASH=`openssl x509 -in client.crt -sha1 -noout -fingerprint | cut -d'=' -f2 | sed s/://g`
   echo "security set-identity-preference -Z $HASH -s https://$SERVER"
+  cd -
 }
 
-CA="vafer.org"
+# CA="vafer.org"
+# create_ca $CA 4096 365
+# create_server $CA "vafer.org" 4096 365
+# create_client $CA "torsten" 4096 365
+
+CA="docker-registry"
 create_ca $CA 4096 365
 create_server $CA "vafer.org" 4096 365
-create_client $CA "torsten" 4096 365
+create_client $CA "vserver" 4096 365
+create_client $CA "laptop" 4096 365
